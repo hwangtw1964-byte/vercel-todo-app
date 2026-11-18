@@ -3,130 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>나의 할일 목록</title>
+  <title>나의 실습 프로젝트</title>
   <style>
+    :root {
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --badge-bg: #f3f4f6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111827;
+        --card: #1f2937;
+        --text: #f3f4f6;
+        --muted: #9ca3af;
+        --border: #374151;
+        --accent: #60a5fa;
+        --badge-bg: #374151;
+      }
+    }
     * { box-sizing: border-box; }
     body {
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: #f4f5f7;
       margin: 0;
-      padding: 40px 16px;
+      padding: 48px 16px;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
-    .container {
-      max-width: 480px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 36px; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    header p { margin: 0; color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
     }
-    h1 { margin: 0 0 20px; font-size: 24px; text-align: center; }
-    form { display: flex; gap: 8px; margin-bottom: 16px; }
-    input[type="text"] {
-      flex: 1;
-      padding: 10px 12px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    button {
-      padding: 10px 16px;
-      font-size: 14px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #2563eb;
-      color: #fff;
-    }
-    button:hover { opacity: 0.9; }
-    ul { list-style: none; padding: 0; margin: 0; }
-    li {
+    .card {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 4px;
-      border-bottom: 1px solid #eee;
+      flex-direction: column;
+      gap: 12px;
+      padding: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
-    li span { flex: 1; word-break: break-all; }
-    li.done span { text-decoration: line-through; color: #999; }
-    li input[type="checkbox"] { width: 18px; height: 18px; }
-    .delete-btn { background: #ef4444; padding: 6px 12px; }
+    .card:not(.disabled):hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+    .card.disabled { cursor: not-allowed; opacity: 0.75; }
+    .icon { font-size: 36px; line-height: 1; }
+    .num { font-size: 13px; color: var(--muted); font-weight: 600; }
+    .card h2 { margin: 0; font-size: 19px; }
+    .badge {
+      align-self: flex-start;
+      margin-top: auto;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      background: var(--badge-bg);
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>나의 할일 목록</h1>
-    <form id="todo-form">
-      <input type="text" id="todo-input" placeholder="할일을 입력하세요" autocomplete="off">
-      <button type="submit">추가</button>
-    </form>
-    <ul id="todo-list"></ul>
+  <div class="wrap">
+    <header>
+      <h1>나의 실습 프로젝트</h1>
+      <p>실습으로 만든 웹앱들을 모아두는 공간입니다.</p>
+    </header>
+
+    <main class="grid" id="grid"></main>
   </div>
 
   <script>
-    const STORAGE_KEY = 'todos';
-    const form = document.getElementById('todo-form');
-    const input = document.getElementById('todo-input');
-    const list = document.getElementById('todo-list');
+    // 링크가 준비되면 url 값에 주소를 넣으면 카드가 활성화됩니다.
+    const projects = [
+      { icon: '✅', title: '할일 목록 리스트',       url: '' },
+      { icon: '🐍', title: '클로드 활용 스네이크 게임', url: '' },
+      { icon: '🙋', title: '개인 프로파일',          url: '' },
+      { icon: '📈', title: '주식 일기',              url: '' },
+      { icon: '🦾', title: '4축 로봇암 시뮬레이터',    url: '' },
+      { icon: '📚', title: '이북(ebook) 쇼핑몰',      url: '' },
+    ];
 
-    let todos = load();
+    const grid = document.getElementById('grid');
+    projects.forEach((p, i) => {
+      const card = document.createElement(p.url ? 'a' : 'div');
+      card.className = 'card' + (p.url ? '' : ' disabled');
+      if (p.url) card.href = p.url;
+      else card.setAttribute('aria-disabled', 'true');
 
-    function load() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
-    }
-
-    function save() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-    }
-
-    function render() {
-      list.innerHTML = '';
-      todos.forEach((todo) => {
-        const li = document.createElement('li');
-        if (todo.done) li.classList.add('done');
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = todo.done;
-        checkbox.addEventListener('change', () => {
-          todo.done = checkbox.checked;
-          save();
-          render();
-        });
-
-        const text = document.createElement('span');
-        text.textContent = todo.text;
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = '삭제';
-        delBtn.className = 'delete-btn';
-        delBtn.addEventListener('click', () => {
-          todos = todos.filter((t) => t.id !== todo.id);
-          save();
-          render();
-        });
-
-        li.append(checkbox, text, delBtn);
-        list.appendChild(li);
-      });
-    }
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (!text) return;
-      todos.push({ id: Date.now(), text, done: false });
-      save();
-      render();
-      input.value = '';
-      input.focus();
+      card.innerHTML = `
+        <div class="icon">${p.icon}</div>
+        <div class="num">PROJECT ${String(i + 1).padStart(2, '0')}</div>
+        <h2></h2>
+        <span class="badge">${p.url ? '바로가기 →' : '준비 중'}</span>
+      `;
+      card.querySelector('h2').textContent = p.title;
+      grid.appendChild(card);
     });
-
-    render();
   </script>
 </body>
 </html>
